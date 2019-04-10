@@ -6,14 +6,20 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
+
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity
 {
     // These define how the list of numbers will be populated
-    private final int NUMBER_OF_ELEMENTS = 100;
-    private final int MAX_NUMBER = 500;
-    private final int MIN_NUMBER = 0;
+    private int NUMBER_OF_ELEMENTS = 100;
+    private int MAX_NUMBER = 500;
+    private int MIN_NUMBER = 0;
+
+    // Colors to indicate failure or success to the user
+    private final int badColor = 0xFFFF6969;
+    private final int goodColor = 0xFFFFFFFF;
 
     // GUI elements and their associated objects
     private ListView sortedLV, unsortedLV;
@@ -22,6 +28,8 @@ public class MainActivity extends AppCompatActivity
     private String[] sortedStrings, unsortedStrings;
 
     private Button resetBtn, insertionBtn, mergeBtn;
+
+    private TextView lbText, ubText, sizeText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -45,8 +53,85 @@ public class MainActivity extends AppCompatActivity
         sortedLV.setAdapter(sortedAA);
         unsortedLV.setAdapter(unsortedAA);
 
+        lbText = this.findViewById(R.id.lbText);
+        ubText = this.findViewById(R.id.ubText);
+        sizeText = this.findViewById(R.id.sizeText);
+
+        // Updates "hints" for the setting text boxes, showing current values
+        lbText.setHint(String.format("%d", MIN_NUMBER));
+        ubText.setHint(String.format("%d", MAX_NUMBER));
+        sizeText.setHint(String.format("%d", NUMBER_OF_ELEMENTS));
+
         // Fill both lists with random numbers and populate the list views
         this.initializeArrays();
+    }
+
+    private boolean updateSettings()
+    {
+        int MIN_NUMBER_TEMP = MIN_NUMBER;
+        int MAX_NUMBER_TEMP = MAX_NUMBER;
+        int NUMBER_OF_ELEMENTS_TEMP = NUMBER_OF_ELEMENTS;
+
+        if(!lbText.getText().toString().equals(""))
+        {
+            MIN_NUMBER_TEMP = Integer.parseInt(lbText.getText().toString());
+        }
+
+        if(!ubText.getText().toString().equals(""))
+        {
+            MAX_NUMBER_TEMP = Integer.parseInt(ubText.getText().toString());
+        }
+
+        if(!sizeText.getText().toString().equals(""))
+        {
+            NUMBER_OF_ELEMENTS_TEMP = Integer.parseInt(sizeText.getText().toString());
+        }
+
+        // Trap for errors
+        if(MIN_NUMBER_TEMP > MAX_NUMBER_TEMP)
+        {
+            lbText.setBackgroundColor(badColor);
+            ubText.setBackgroundColor(badColor);
+            return false;
+        }
+        else if(NUMBER_OF_ELEMENTS_TEMP <= 0)
+        {
+            sizeText.setBackgroundColor(badColor);
+            return false;
+        }
+        else
+        {
+            // Set colors back to default (in case they were red)
+            lbText.setBackgroundColor(goodColor);
+            ubText.setBackgroundColor(goodColor);
+            sizeText.setBackgroundColor(goodColor);
+
+            MIN_NUMBER = MIN_NUMBER_TEMP;
+            MAX_NUMBER = MAX_NUMBER_TEMP;
+            NUMBER_OF_ELEMENTS = NUMBER_OF_ELEMENTS_TEMP;
+
+            // We are good (input-wise). Reinitialize arrays to be correct sizes and re-hook-up
+            // -> the array adapters and listViews.
+            sortedNumbers = new int[NUMBER_OF_ELEMENTS];
+            unsortedNumbers = new int[NUMBER_OF_ELEMENTS];
+
+            sortedStrings = new String[NUMBER_OF_ELEMENTS];
+            unsortedStrings = new String[NUMBER_OF_ELEMENTS];
+
+            sortedAA = new ArrayAdapter<String>(this, R.layout.simple_listview_row, sortedStrings);
+            unsortedAA = new ArrayAdapter<String>(this, R.layout.simple_listview_row, unsortedStrings);
+
+            sortedLV.setAdapter(sortedAA);
+            unsortedLV.setAdapter(unsortedAA);
+
+            this.initializeArrays();
+
+            lbText.setHint(String.format("%d", MIN_NUMBER));
+            ubText.setHint(String.format("%d", MAX_NUMBER));
+            sizeText.setHint(String.format("%d", NUMBER_OF_ELEMENTS));
+
+            return true;
+        }
     }
 
     private void insertionSort(int[] input)
@@ -106,11 +191,13 @@ public class MainActivity extends AppCompatActivity
             // -> a comparison and put the smaller one in.
             if(lc >= leftArray.length)
             {
+                // Left side is out of bounds
                 originalArray[ac] = rightArray[rc];
                 rc++;
             }
             else if(rc >= rightArray.length)
             {
+                // Right side is out of bounds
                 originalArray[ac] = leftArray[lc];
                 lc++;
             }
@@ -159,7 +246,10 @@ public class MainActivity extends AppCompatActivity
 
     public void resetBtnPressed(View v)
     {
-        this.initializeArrays();
+        if(this.updateSettings())
+        {
+            this.initializeArrays();
+        }
     }
 
     // Fills an array with random integers ranging from lowerBound to upperBound
